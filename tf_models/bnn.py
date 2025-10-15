@@ -376,6 +376,28 @@ class BNN:
                             }
                         )
                     })
+        
+        # Compute final holdout losses to select elite models
+        if holdout_ratio > 1e-12:
+            holdout_losses = self.sess.run(
+                self.mse_loss,
+                feed_dict={
+                    self.sy_train_in: holdout_inputs,
+                    self.sy_train_targ: holdout_targets
+                }
+            )
+        else:
+            # If no holdout set, use training loss
+            holdout_losses = self.sess.run(
+                self.mse_loss,
+                feed_dict={
+                    self.sy_train_in: inputs[idxs[:, :max_logging]],
+                    self.sy_train_targ: targets[idxs[:, :max_logging]]
+                }
+            )
+        
+        # Select elite models based on losses
+        self._end_train(holdout_losses)
 
     def predict(self, inputs, factored=False, layer = False, *args, **kwargs):
         """Returns the distribution predicted by the model for each input vector in inputs.

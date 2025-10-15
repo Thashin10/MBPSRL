@@ -39,6 +39,8 @@ def construct_shallow_model(obs_dim, act_dim, hidden_dim=200, num_networks=1, nu
 	model.add(FC(hidden_dim, activation="swish", weight_decay=0.00005))
 	# model.add(FC(hidden_dim, activation="swish", weight_decay=0.0005))
 	model.add(FC(2*(obs_dim+act_dim), activation="swish", weight_decay=0.000075))
+	# Output: only next_state (obs_dim) for dynamics-only model (PETS)
+	# For PSRL, use construct_model which outputs obs_dim+1 (reward + next_state)
 	model.add(FC(obs_dim, weight_decay=0.000075))
 	model.finalize(tf.train.AdamOptimizer, {"learning_rate": 0.001})
 	return model

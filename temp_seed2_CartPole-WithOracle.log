@@ -1,0 +1,7 @@
+The process cannot access the file because it is being used by another process.
+The system cannot find the file C:\Users\thash\AppData\Local\Temp\__conda_tmp_8365.txt.
+
+ERROR conda.cli.main_run:execute(127): `conda run python run_cartpole.py --with-reward True --seed 2 --num-episodes 15` failed. (See above for error)
+Failed to run 'conda activate "C:\Users\thash\Miniconda3\envs\mbpsrl"'.
+C:\Users\thash\AppData\Local\Temp\__conda_tmp_8365.txt
+

@@ -1,0 +1,1 @@
+﻿& 'C:\Users\thash\miniconda3\Scripts\conda.exe' run -n mbpsrl python run_cartpole.py --with-reward True --num-episodes 100 *>&1 | Out-File -FilePath 'logs_20251014_132845\run_cartpole_with_reward.log' -Encoding utf8

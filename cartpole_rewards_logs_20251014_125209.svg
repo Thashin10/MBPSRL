@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="480">
+  <rect x="0" y="0" width="960" height="480" fill="#ffffff"/>
+  <line x1="50" y1="430" x2="910" y2="430" stroke="#333" stroke-width="1"/>
+  <line x1="50" y1="430" x2="50" y2="50" stroke="#333" stroke-width="1"/>
+  <polyline fill="none" stroke="#1f77b4" stroke-width="2" points="50.00,430.00 111.43,232.93 172.86,201.24 234.29,50.12 295.71,50.80 357.14,50.00 418.57,50.74 480.00,50.52 541.43,137.87 602.86,159.85 664.29,50.84 725.71,128.06 787.14,50.27 848.57,50.48 910.00,50.02"/>
+  <text x="480" y="20" text-anchor="middle" font-family="Arial" font-size="16">CartPole Cumulative Rewards per Episode</text>
+  <text x="480" y="470" text-anchor="middle" font-family="Arial" font-size="12">Episode</text>
+  <text x="15" y="240" transform="rotate(-90, 15, 240)" text-anchor="middle" font-family="Arial" font-size="12">Cumulative Reward</text>
+</svg>

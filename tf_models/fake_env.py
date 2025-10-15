@@ -4,9 +4,18 @@ import pdb
 
 class FakeEnv:
 
-    def __init__(self, model, config):
+    def __init__(self, model, config, reward_fn=None):
+        """
+        Args:
+            model: Dynamics model that predicts next state (and optionally reward)
+            config: Environment configuration (must have termination_fn attribute)
+            reward_fn: Optional reward function(obs, act, next_obs) -> reward.
+                       If provided, uses oracle rewards instead of learned rewards.
+                       If None, expects model to output [reward, next_state].
+        """
         self.model = model
         self.config = config
+        self.reward_fn = reward_fn
 
     '''
         x : [ batch_size, obs_dim + 1 ]
@@ -41,7 +50,19 @@ class FakeEnv:
 
         inputs = np.concatenate((obs, act), axis=-1)
         ensemble_model_means, ensemble_model_vars = self.model.predict(inputs, factored=True)
-        ensemble_model_means[:,:,1:] += obs
+        
+        obs_dim = obs.shape[-1]
+        
+        if self.reward_fn is not None:
+            # Model only predicts delta_state (for PETS with oracle rewards)
+            # ensemble_model_means shape: [num_models, batch_size, obs_dim]
+            ensemble_model_means += obs  # Add current state to predicted delta
+        else:
+            # Model predicts [reward, delta_state] (for PSRL with learned rewards)
+            # ensemble_model_means shape: [num_models, batch_size, obs_dim + 1]
+            # Only add obs to the state part (skip reward which is first column)
+            ensemble_model_means[:, :, 1:] += obs
+        
         ensemble_model_stds = np.sqrt(ensemble_model_vars)
 
         if deterministic:
@@ -60,12 +81,28 @@ class FakeEnv:
 
         log_prob, dev = self._get_logprob(samples, ensemble_model_means, ensemble_model_vars)
 
-        rewards, next_obs = samples[:,:1], samples[:,1:]
+        if self.reward_fn is not None:
+            # Using oracle rewards: samples contain only next_state
+            next_obs = samples
+            rewards = self.reward_fn(obs, act, next_obs)
+            if len(rewards.shape) == 1:
+                rewards = rewards[:, None]  # Ensure shape [batch_size, 1]
+        else:
+            # Using learned rewards: samples contain [reward, next_state]
+            rewards, next_obs = samples[:,:1], samples[:,1:]
+        
         terminals = self.config.termination_fn(obs, act, next_obs)
 
         batch_size = model_means.shape[0]
-        return_means = np.concatenate((model_means[:,:1], terminals, model_means[:,1:]), axis=-1)
-        return_stds = np.concatenate((model_stds[:,:1], np.zeros((batch_size,1)), model_stds[:,1:]), axis=-1)
+        
+        if self.reward_fn is not None:
+            # For oracle rewards, return_means/stds only contain state info
+            return_means = np.concatenate((model_means, terminals), axis=-1)
+            return_stds = np.concatenate((model_stds, np.zeros((batch_size,1))), axis=-1)
+        else:
+            # For learned rewards, return_means/stds contain [reward, terminal, state]
+            return_means = np.concatenate((model_means[:,:1], terminals, model_means[:,1:]), axis=-1)
+            return_stds = np.concatenate((model_stds[:,:1], np.zeros((batch_size,1)), model_stds[:,1:]), axis=-1)
 
         if return_single:
             next_obs = next_obs[0]

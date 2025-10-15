@@ -21,7 +21,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=None)
     parser.add_argument('--env', default='Pendulum-v0', metavar='ENV',
                         help='env :[Pendulum-v0, CartPole-v0,CartPole-continuous]')
-    parser.add_argument('--with-reward', type=bool, default=False, metavar='NS',
+    parser.add_argument('--with-reward', type=lambda x: x.lower() == 'true', default=False, metavar='NS',
                         help='predict with true rewards or not')
     parser.add_argument('--sigma', type=float, default=1e1, metavar='T', help='var for betas')
     parser.add_argument('--sigma_n', type=float, default=1e-3, metavar='T', help='var for noise')
@@ -38,13 +38,25 @@ if __name__ == '__main__':
     parser.add_argument('--hidden-dim-cost', type=int, default=200, metavar='NS')
 
     parser.add_argument('--training-iter-dx', type=int, default=100, metavar='NS')
+    parser.add_argument('--num-episodes', type=int, default=15, metavar='N',
+                        help='number of episodes to run')
+    parser.add_argument('--seed', type=int, default=0, metavar='S',
+                        help='random seed for reproducibility')
     parser.add_argument('--training-iter-cost', type=int, default=150, metavar='NS')
     parser.add_argument('--var', type=float, default=3.0, metavar='T', help='var')
     parser.add_argument('--predict_with_bias', type=bool, default = True, metavar='NS',
                         help='predict y with bias')
 
     args = parser.parse_args()
+    
+    # Set random seeds for reproducibility
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
+    import random
+    random.seed(args.seed)
+    
     print("current dir:", os.getcwd())
+    print("Using seed:", args.seed)
     if 'CartPole-continuous' in args.env:
         env = ContinuousCartPoleEnv()
     elif 'Pendulum-v0' in args.env:
@@ -73,7 +85,11 @@ if __name__ == '__main__':
 
 
     cum_rewards = []
-    num_episode = 15
+    cumulative_rewards_over_time = []  # Track cumulative rewards at each time step
+    total_timesteps = 0
+    total_cumulative_reward = 0.0
+    
+    num_episode = args.num_episodes
     for episode in range(num_episode):
         if args.with_reward:
             from CEM_with import CEM
@@ -115,6 +131,11 @@ if __name__ == '__main__':
             if not args.with_reward:
                 my_cost.add_data(new_x=xu, new_y=r)
             cum_reward += r
+            
+            # Track cumulative reward at each time step
+            total_timesteps += 1
+            total_cumulative_reward += r.item()
+            cumulative_rewards_over_time.append([total_timesteps, total_cumulative_reward])
 
             state = new_state
 
@@ -126,6 +147,15 @@ if __name__ == '__main__':
         if not args.with_reward:
             my_cost.train(args.training_iter_cost)
             my_cost.update_bays_reg()
-        np.savetxt('pendulum_log.txt', cum_rewards)
+        
+        # Save with descriptive filenames including seed
+        oracle_suffix = '_with_oracle' if args.with_reward else '_without_oracle'
+        seed_suffix = '_seed' + str(args.seed)
+        output_dir = 'seeds_data'
+        os.makedirs(output_dir, exist_ok=True)
+        
+        np.savetxt(os.path.join(output_dir, 'pendulum_log' + oracle_suffix + seed_suffix + '.txt'), cum_rewards)
+        np.savetxt(os.path.join(output_dir, 'pendulum_timestep_rewards' + oracle_suffix + seed_suffix + '.txt'), cumulative_rewards_over_time)
 
     print(cum_rewards)
+    print("\nTotal timesteps: {}, Final cumulative reward: {}".format(total_timesteps, total_cumulative_reward))
