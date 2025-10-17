@@ -54,7 +54,9 @@ class CEM():
         '''choose elite actions from simulation trajectorys from current timestep t'''
         action_shape = len([self.env.action_space.sample()])
 
-        init_means = np.concatenate((self.pre_means[self.action_shape:],np.zeros(self.action_shape)))
+        # Better warm-start: repeat last action instead of zeros for smoother planning
+        init_means = np.concatenate((self.pre_means[self.action_shape:], 
+                                      self.pre_means[-self.action_shape:]))
 
         init_vars = self.args.var*np.ones(self.action_shape * self.plan_hor)
         means = init_means
@@ -88,7 +90,9 @@ class CEM():
         theta = state[:,2]
         up_reward = np.cos(theta)
         distance_penalty_reward = -0.01 * (x ** 2)
-        return up_reward + distance_penalty_reward
+        # Add stability bonus for small angles
+        stability_bonus = 0.1 * np.exp(-np.abs(theta))
+        return up_reward + distance_penalty_reward + stability_bonus
 
     def get_actual_cost_pendulum(self, state, action):
         def angle_normalize(x):

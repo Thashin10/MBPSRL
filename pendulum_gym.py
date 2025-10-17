@@ -63,11 +63,16 @@ class PendulumEnv():
         l = 1.
         dt = self.dt
 
-        u = np.clip(u, -self.max_torque, self.max_torque)[0]
-        self.last_u = u # for rendering
-        costs = angle_normalize(th)**2 + .1*thdot**2 + .001*(u**2)
+        # Handle both scalar and array inputs
+        u = np.clip(u, -self.max_torque, self.max_torque)
+        if np.isscalar(u):
+            u_scalar = float(u)
+        else:
+            u_scalar = float(u.flatten()[0])
+        self.last_u = u_scalar # for rendering
+        costs = angle_normalize(th)**2 + .1*thdot**2 + .001*(u_scalar**2)
 
-        newthdot = thdot + (-3*g/(2*l) * np.sin(th + np.pi) + 3./(m*l**2)*u) * dt + np.random.normal(loc=0, scale=0.01, size=[1])
+        newthdot = thdot + (-3*g/(2*l) * np.sin(th + np.pi) + 3./(m*l**2)*u_scalar) * dt + np.random.normal(loc=0, scale=0.01, size=[1])
         newth = th + newthdot*dt + np.random.normal(loc=0, scale=0.01, size=[1])
         newthdot = np.clip(newthdot, -self.max_speed, self.max_speed) #pylint: disable=E1111
 

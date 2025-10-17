@@ -67,8 +67,8 @@ foreach ($file in $expectedFiles) {
     $path = "seeds_data\$file"
     if (Test-Path $path) {
         $lines = (Get-Content $path | Measure-Object -Line).Lines
-        Write-Host "✓ $file ($lines timesteps)"
+        Write-Host "[OK] $file ($lines timesteps)"
     } else {
-        Write-Host "✗ $file - MISSING"
+        Write-Host "[MISSING] $file"
     }
 }

@@ -51,7 +51,9 @@ class CEM():
         cur_s = cur_s.squeeze()
         '''choose elite actions from simulation trajectorys from current timestep t'''
         action_shape = len([self.env.action_space.sample()])
-        init_means = np.concatenate((self.pre_means[self.action_shape:], np.zeros(self.action_shape)))
+        # Better warm-start: repeat last action instead of zeros for smoother planning
+        init_means = np.concatenate((self.pre_means[self.action_shape:], 
+                                      self.pre_means[-self.action_shape:]))
 
         init_vars = self.args.var * np.ones(self.action_shape * self.plan_hor)
 

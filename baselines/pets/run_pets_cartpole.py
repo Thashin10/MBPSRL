@@ -213,9 +213,6 @@ def run_pets_cartpole(args):
     
     # Training loop
     for episode in range(args.num_episodes):
-        print("\n" + "="*60)
-        print(f"Episode {episode + 1}/{args.num_episodes}")
-        print("="*60, flush=True)
         print("\n" + "=" * 60)
         print("Episode {}/{}".format(episode + 1, args.num_episodes))
         print("=" * 60)
@@ -229,14 +226,14 @@ def run_pets_cartpole(args):
         # Create fake environment (after first episode when we have data)
         if episode > 0:
             # Train ensemble on collected data
-            print("Training dynamics ensemble...", flush=True)
+            print("Training dynamics ensemble...")
             states_array = np.array(dataset_states)
             actions_array = np.array(dataset_actions).reshape(-1, 1)  # Ensure shape (N, 1)
             train_in = np.concatenate([states_array, actions_array], axis=-1)
             train_out = np.array(dataset_next_states) - states_array  # Predict deltas
             
             dx_model.train(train_in, train_out, epochs=args.training_iter_dx, hide_progress=True)
-            print("Ensemble training complete", flush=True)
+            print("Ensemble training complete")
             
             # Create fake environment for planning with oracle rewards
             fake_env = FakeEnv(dx_model, env, reward_fn=cartpole_reward_fn)
@@ -273,12 +270,13 @@ def run_pets_cartpole(args):
             state = new_state
             episode_steps += 1
         
-        print(f"Episode {episode}: reward = {cum_reward:.2f}, steps = {episode_steps}, total_timesteps = {total_timesteps}", flush=True)
+        print("Episode {}: reward = {:.2f}, steps = {}, total_timesteps = {}".format(
+            episode, cum_reward, episode_steps, total_timesteps))
         cum_rewards.append([episode, cum_reward])
     
     # Save results
     seed_suffix = '_seed' + str(args.seed)
-    output_dir = 'seeds_data'
+    output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
     
     np.savetxt(
@@ -304,6 +302,7 @@ if __name__ == '__main__':
     # Environment
     parser.add_argument('--num-episodes', type=int, default=15, help='Number of episodes')
     parser.add_argument('--seed', type=int, default=0, help='Random seed')
+    parser.add_argument('--output-dir', type=str, default='seeds_data', help='Output directory')
     
     # Model ensemble
     parser.add_argument('--num-networks', type=int, default=5, help='Ensemble size')
